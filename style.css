@@ -43,24 +43,43 @@ html, body {
 /* HUD */
 #hud {
   position: absolute;
-  top: 1.5%;
-  left: 1.5%;
+  top: 3%;
+  left: 3%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.55);
-  padding: 0.6% 1.4%;
-  border: 3px solid #FFD700;
-  border-radius: 4px;
-  color: #FFD700;
-  font-size: clamp(13px, 1.8vw, 22px);
-  letter-spacing: 1px;
+  gap: clamp(10px, 1.6vw, 20px);
   pointer-events: none;
+  font-family: "Press Start 2P", "Arial Black", sans-serif;
 }
 
-#coinIcon {
+.hud-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.coin-icon {
+  width: clamp(16px, 1.9vw, 24px);
+  height: clamp(16px, 1.9vw, 24px);
+  border-radius: 50%;
+  background: #FFD700;
+  box-shadow:
+    inset -3px -3px 0 #B8860B,
+    inset 2px 2px 0 #FFF3B0,
+    0 0 0 2px #000;
+  flex-shrink: 0;
+}
+
+#coinCount {
+  color: #fff;
+  font-size: clamp(14px, 1.8vw, 22px);
+  letter-spacing: 1px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+#coinCount small {
+  font-size: 0.7em;
   color: #FFD700;
-  font-size: 1.1em;
 }
 
 /* Overlay screens */
@@ -83,9 +102,10 @@ html, body {
 }
 
 .title {
-  font-size: clamp(30px, 6vw, 58px);
-  line-height: 1.1;
-  letter-spacing: 2px;
+  font-family: "Press Start 2P", "Arial Black", sans-serif;
+  font-size: clamp(22px, 4.4vw, 42px);
+  line-height: 1.6;
+  letter-spacing: 1px;
   color: #fff;
   text-shadow:
     3px 3px 0 #000,
@@ -100,7 +120,7 @@ html, body {
 
 .title.win {
   color: #3FBF3F;
-  font-size: clamp(26px, 5vw, 48px);
+  font-size: clamp(18px, 3.4vw, 32px);
 }
 
 .subtitle {
@@ -124,7 +144,6 @@ html, body {
   gap: 0.8vw;
   background: #000;
   border: 3px solid #fff;
-  border-radius: 4px;
   padding: 1.2% 2%;
 }
 
@@ -147,7 +166,6 @@ html, body {
   background: #fff;
   color: #000;
   border: 2px solid #000;
-  border-radius: 3px;
   font-weight: bold;
   font-size: 13px;
 }
@@ -190,49 +208,54 @@ html, body {
 }
 
 .mute-btn {
+  position: absolute;
+  top: 3%;
+  right: 3%;
   pointer-events: auto;
-  background: none;
-  border: none;
-  color: #FFD700;
+  width: clamp(30px, 3.4vw, 42px);
+  height: clamp(30px, 3.4vw, 42px);
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  margin-left: 8px;
-  padding: 2px;
+  padding: 0;
 }
 
 .mute-btn:hover {
-  opacity: 0.8;
+  background: #222;
+}
+
+.mute-btn:active {
+  transform: translateY(1px);
 }
 
 .boss-bar {
   position: absolute;
-  top: 1.5%;
+  top: 3%;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.55);
-  padding: 0.6% 1.4%;
-  border: 3px solid #E52521;
-  border-radius: 4px;
+  gap: 10px;
   pointer-events: none;
+  font-family: "Press Start 2P", "Arial Black", sans-serif;
 }
 
 .boss-label {
-  color: #E52521;
-  font-size: clamp(12px, 1.5vw, 18px);
+  color: #fff;
+  font-size: clamp(10px, 1.3vw, 16px);
   letter-spacing: 1px;
+  text-shadow: 2px 2px 0 #000;
 }
 
 .boss-track {
   width: clamp(120px, 18vw, 260px);
-  height: 14px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid #E52521;
-  border-radius: 4px;
+  height: 16px;
+  background: #000;
+  border: 2px solid #fff;
   overflow: hidden;
 }
 
@@ -244,13 +267,23 @@ html, body {
 }
 
 .invincible-bar {
-  width: 80px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.invincible-label {
+  color: #FFD700;
+  font-size: clamp(9px, 1.1vw, 13px);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.invincible-track {
+  width: 70px;
   height: 10px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #000;
   border: 2px solid #FFD700;
-  border-radius: 4px;
   overflow: hidden;
-  margin-left: 8px;
 }
 
 .invincible-fill {

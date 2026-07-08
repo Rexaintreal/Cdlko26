@@ -1,5 +1,5 @@
 // ============================================================
-// RECTANGLE RUNNER — a tiny canvas-only platformer
+// Mario2 
 // ============================================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -37,7 +37,7 @@ let lastTime = 0;
 const levelWidth = 4900;
 
 // Ground segments, floating brick platforms, and pipes.
-// type: 'ground' | 'brick' | 'pipe' — all solid, only rendering differs.
+// type: 'ground' | 'brick' | 'pipe' - all solid, only rendering differs.
 const platforms = [
   // ground segments (with pits between them)
   { x: 0,    y: 460, w: 500, h: 80, type: 'ground' },
@@ -61,14 +61,14 @@ const platforms = [
   { x: 2820, y: 360, w: 90,  h: 24, type: 'brick' },
   { x: 3660, y: 380, w: 110, h: 24, type: 'brick' },
 
-  // pipes — classic obstacles you can also stand on top of
+  // pipes - classic obstacles you can also stand on top of
   { x: 150,  y: 380, w: 70,  h: 80,  type: 'pipe' },
   { x: 1300, y: 340, w: 70,  h: 120, type: 'pipe' },
   { x: 1900, y: 360, w: 70,  h: 100, type: 'pipe' },
   { x: 2700, y: 320, w: 70,  h: 140, type: 'pipe' },
 ];
 
-// Triangular spikes — touching one is instant game over
+// Triangular spikes - touching one is instant game over
 const spikes = [
   { x: 300,  y: 420, w: 40, h: 40 },
   { x: 850,  y: 420, w: 40, h: 40 },
@@ -178,7 +178,6 @@ let screenShake = {
   intensity: 0
 };
 
-//assets - manual code
 const ASSETS ={};
 const ASSET_MANIFEST = {
   player:      'assets/mario2.png',
@@ -406,7 +405,9 @@ function circleRectOverlap(circle, rect) {
 }
 
 function updateHUD() {
-  coinCountEl.textContent = `Coins: ${score} / ${totalCoins}`;
+  const s = String(score).padStart(2, '0');
+  const t = String(totalCoins).padStart(2, '0');
+  coinCountEl.innerHTML = `${s}<small>/${t}</small>`;
 }
 
 function updateBossHUD() {
@@ -668,7 +669,7 @@ function updateCamera() {
 }
 
 // ------------------------------------------------------------
-// Render — flat colors only, no gradients
+// Render - flat colors only, no gradients
 // ------------------------------------------------------------
 function drawBackground() {
   if (imgOk('bgSky')) {
@@ -839,7 +840,7 @@ function drawPowerups() {
   for (const p of powerups) {
     const by = p.y + Math.sin(Date.now() / 250 + p.x * 0.1) * 5;
     if (imgOk('powerup')) {
-      ctx.drawImage(ASSETS.powerup, p.x - p.r, by - p.r, p.r * 2, p.r * 2);   // ← 5 args, fixed
+      ctx.drawImage(ASSETS.powerup, p.x - p.r, by - p.r, p.r * 2, p.r * 2);
     } else {
       ctx.fillStyle = '#FFD700';
       ctx.beginPath();
@@ -855,7 +856,7 @@ function drawPowerups() {
   }
 }
 
-// edited manually
+
 function drawPlayer() {
   const p = player;
   const isInvincible = Date.now() < invincibleUntil;

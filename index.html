@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rectangle Runner — Platformer</title>
+<title>Mario2r</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,13 +18,18 @@
 
       <!-- HUD -->
       <div id="hud">
-        <span id="coinIcon">●</span>
-        <span id="coinCount">Coins: 0 / 0</span>
-        <button id="muteBtn" class="mute-btn" aria-label="Toggle sound"></button>
+        <div id="scorePanel" class="hud-panel">
+          <span id="coinIcon" class="coin-icon" aria-hidden="true"></span>
+          <span id="coinCount">00<small>/00</small></span>
+        </div>
         <div id="invincibleBar" class="invincible-bar hidden">
-          <div id="invincibleFill" class="invincible-fill"></div>
+          <span class="invincible-label">STAR</span>
+          <div class="invincible-track">
+            <div id="invincibleFill" class="invincible-fill"></div>
+          </div>
         </div>
       </div>
+      <button id="muteBtn" class="mute-btn" aria-label="Toggle sound"></button>
       <div id="bossBar" class="boss-bar hidden">
         <span class="boss-label">DRAGON</span>
         <div class="boss-track">
