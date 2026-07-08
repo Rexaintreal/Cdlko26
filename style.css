@@ -206,6 +206,43 @@ html, body {
   opacity: 0.8;
 }
 
+.boss-bar {
+  position: absolute;
+  top: 1.5%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.6% 1.4%;
+  border: 3px solid #E52521;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.boss-label {
+  color: #E52521;
+  font-size: clamp(12px, 1.5vw, 18px);
+  letter-spacing: 1px;
+}
+
+.boss-track {
+  width: clamp(120px, 18vw, 260px);
+  height: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid #E52521;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.boss-fill {
+  height: 100%;
+  width: 100%;
+  background: #E52521;
+  transition: width 0.15s ease;
+}
+
 .invincible-bar {
   width: 80px;
   height: 10px;

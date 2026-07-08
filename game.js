@@ -19,6 +19,8 @@ const playAgainBtn = document.getElementById('playAgainBtn');
 const muteBtn = document.getElementById('muteBtn');
 const invincibleBar = document.getElementById('invincibleBar');
 const invincibleFill = document.getElementById('invincibleFill');
+const bossBar = document.getElementById('bossBar');
+const bossFill = document.getElementById('bossFill');
 
 // ------------------------------------------------------------
 // Constants
@@ -32,7 +34,7 @@ let lastTime = 0;
 // ------------------------------------------------------------
 // Level definition (world coordinates)
 // ------------------------------------------------------------
-const levelWidth = 3460;
+const levelWidth = 4900;
 
 // Ground segments, floating brick platforms, and pipes.
 // type: 'ground' | 'brick' | 'pipe' — all solid, only rendering differs.
@@ -44,7 +46,9 @@ const platforms = [
   { x: 1500, y: 460, w: 500, h: 80, type: 'ground' },
   { x: 2100, y: 460, w: 200, h: 80, type: 'ground' },
   { x: 2400, y: 460, w: 400, h: 80, type: 'ground' },
-  { x: 2900, y: 460, w: 560, h: 80, type: 'ground' },
+  { x: 2900, y: 460, w: 400, h: 80, type: 'ground' },
+  { x: 3460, y: 460, w: 200, h: 80, type: 'ground' },
+  { x: 3820, y: 460, w: 1000, h: 80, type: 'ground' }, 
 
   // floating brick platforms
   { x: 720,  y: 360, w: 110, h: 24, type: 'brick' },
@@ -55,6 +59,7 @@ const platforms = [
   { x: 2000, y: 380, w: 90,  h: 24, type: 'brick' },
   { x: 2320, y: 370, w: 90,  h: 24, type: 'brick' },
   { x: 2820, y: 360, w: 90,  h: 24, type: 'brick' },
+  { x: 3660, y: 380, w: 110, h: 24, type: 'brick' },
 
   // pipes — classic obstacles you can also stand on top of
   { x: 150,  y: 380, w: 70,  h: 80,  type: 'pipe' },
@@ -73,6 +78,7 @@ const spikes = [
   { x: 2470, y: 420, w: 40, h: 40 },
   { x: 2600, y: 420, w: 40, h: 40 },
   { x: 3050, y: 420, w: 40, h: 40 },
+  { x: 3530, y: 420, w: 40, h: 40 }, 
 ];
 
 // Coins (source data, cloned into `coins` on (re)start)
@@ -110,11 +116,37 @@ let powerups = [];
 const INVINCIBLE_DURATION = 6000;
 let invincibleUntil = 0;
 
+const swordData = {
+  x: 3560,
+  y: 400,
+  r: 15
+};
+
+let sword = null;
+
+const BOSS_MAX_HP = 6;
+const BOSS_W = 220, BOSS_H = 200;
+const boss = {
+  x: 4350, y: 460 - BOSS_H, w: BOSS_W, h: BOSS_H,
+  hp: BOSS_MAX_HP,
+  alive: true,
+  awake: false,
+  nextFireballAt: 0,
+  lastHitAt: 0,
+};
+
+const ARENA_START_X = 3820;
+const HIT_COOLDOWN = 500;
+const FIREBALL_MIN_GAP = 1200;
+const FIREBALL_MAX_GAP = 2200;
+const FIREBALL_SPEED =  5.5;
+const FIREBALL_R = 16;
+let fireballs = [];
 
 // Flagpole goal (classic end-of-level marker) + a small castle behind it
-const flagpole = { x: 3340, y: 300, w: 12, h: 160 };
+const flagpole = { x: 4680, y: 300, w: 12, h: 160 };
 const flagpoleTrigger = { x: flagpole.x - 15, y: flagpole.y, w: flagpole.w + 30, h: flagpole.h };
-const castle = { x: 3370, y: 360, w: 90, h: 100 };
+const castle = { x: 4710, y: 360, w: 90, h: 100 };
 
 const totalCoins = coinsData.length;
 
@@ -131,6 +163,8 @@ const player = {
   vx: 0, vy: 0,
   grounded: false,
   facing: 1,
+  hasSword: false,
+  invulnUntil: 0,
 };
 
 const keys = {};
@@ -157,6 +191,9 @@ const ASSET_MANIFEST = {
   bgMountains: 'assets/bg_mountain.png',
   bgHills:     'assets/bg_hills.png',
   powerup:     'assets/powerup.png',
+  dragon:      'assets/dragon.png',
+  flame:       'assets/flame.png',
+  sword:       'assets/sword.png',
 };
 
 function loadAssets(onComplete) {
@@ -240,6 +277,8 @@ const SFX_MANIFEST = {
 };
 
 let bgm = null;
+let bossBgm = null;
+let currentBgm = null;
 let audioUnlocked = false;
 let muted = false;
 
@@ -252,6 +291,10 @@ function loadAudio() {
   bgm = new Audio('music/bgm.mp3');
   bgm.loop = true;
   bgm.volume = 0.35;
+
+  bossBgm = new Audio('music/boss.mp3');
+  bossBgm.loop = true;
+  bossBgm.volume = 0.35;
 }
 
 
@@ -272,30 +315,47 @@ function sfxCoin()  { playSfx('coin'); }
 function sfxDeath() { playSfx('death'); }
 function sfxWin()   { playSfx('win'); }
 function sfxPowerup() { playSfx('powerup'); }
+function sfxHit()   { playSfx('coin'); }
 
 
 function startMusic() {
-  if (!bgm || muted) return;
-  bgm.currentTime = 0;
-  bgm.play().catch(() => {});
+  playTrack(bgm);
 }
 
-function stopMusic(fadeMs = 250) {
-  if (!bgm) return;
-  const startVol = bgm.volume;
+function startBossMusic() {
+  playTrack(bossBgm);
+}
+
+function playTrack(track) {
+  if (!track || currentBgm === track) return;
+  if (currentBgm) fadeOutTrack(currentBgm);
+  currentBgm = track;
+  if (muted) return;
+  track.currentTime = 0;
+  track.play().catch(() => {});
+}
+
+function fadeOutTrack(track, fadeMs= 250) {
+  const startVol = track.volume;
   const steps = 10;
-  const stepTime = fadeMs / steps;
+  const stepTime = fadeMs/steps;
   let i = 0;
   const fade = setInterval(() => {
     i++;
-    bgm.volume = Math.max(0, startVol * (1 - i / steps));
+    track.volume = Math.max(0, startVol * (1 - i / steps));
     if (i >= steps) {
       clearInterval(fade);
-      bgm.pause();
-      bgm.currentTime = 0;
-      bgm.volume = startVol;
+      track.pause();
+      track.currentTime = 0;
+      track.volume = startVol;
     }
   }, stepTime);
+}
+
+function stopMusic() {
+  if (!currentBgm) return;
+  fadeOutTrack(currentBgm);
+  currentBgm = null;
 }
 
 // ------------------------------------------------------------
@@ -321,6 +381,7 @@ muteBtn.innerHTML = iconUnmuted;
 muteBtn.addEventListener('click', () => {
   muted = !muted;
   if (bgm) bgm.muted = muted;
+  if (bossBgm) bossBgm.muted = muted;
   muteBtn.innerHTML = muted ? iconMuted : iconUnmuted;
 });
 
@@ -348,6 +409,15 @@ function updateHUD() {
   coinCountEl.textContent = `Coins: ${score} / ${totalCoins}`;
 }
 
+function updateBossHUD() {
+  if (boss.awake && boss.alive) {
+    bossBar.classList.remove('hidden');
+    bossFill.style.width = `${Math.max(0, boss.hp / BOSS_MAX_HP) * 100}%`;
+  } else {
+    bossBar.classList.add('hidden');
+  }
+}
+
 // ------------------------------------------------------------
 // Game state transitions
 // ------------------------------------------------------------
@@ -364,7 +434,17 @@ function initLevel() {
   invincibleUntil = 0;
   score = 0;
   camera.x = 0;
+  player.hasSword = false;
+  player.invulnUntil = 0;
+  sword = { ...swordData };
+  fireballs = [],
+  boss.hp = BOSS_MAX_HP;
+  boss.alive = true;
+  boss.awake = false;
+  boss.nextFireballAt= 0;
+  boss.lastHitAt = 0;
   updateHUD();
+  updateBossHUD();
 }
 
 function startGame() {
@@ -490,9 +570,95 @@ function updatePlayer(dt) {
     }
   }
 
+  //sword
+  if (sword && circleRectOverlap(sword, player)) {
+    sword = null;
+    player.hasSword = true;
+    sfxPowerup();
+    spawnParticles(player.x + player.w / 2, player.y, 12, {
+      color: '#E8E8E8', speed: 4, life: 25, size: 3, gravity: 0.1,
+    });
+  }
+
+  updateBoss(dt);
+
   // --- flagpole / goal ---
   if (rectsOverlap(player, flagpoleTrigger)) {
     winGame();
+  }
+}
+
+function updateBoss(dt) {
+  if (!boss.alive) return;
+  if (!boss.awake && player.x + player.w > ARENA_START_X) {
+    boss.awake = true;
+    boss.nextFireballAt = Date.now() + FIREBALL_MIN_GAP;
+    startBossMusic();
+    updateBossHUD();
+  }
+  if (!boss.awake) return;
+
+  const now = Date.now();
+  if (now >= boss.nextFireballAt) {
+    const targetY = player.y + player.h / 2;
+    const originX = boss.x + (player.x < boss.x ? 0 : boss.w);
+    const originY = boss.y + boss.h * 0.35;
+    const dx = (player.x + player.w / 2) - originX;
+    const dy = targetY - originY;
+    const dist = Math.max(1, Math.hypot(dx, dy));
+    fireballs.push({
+      x: originX, y: originY,
+      vx: (dx / dist) * FIREBALL_SPEED,
+      vy: (dy / dist) * FIREBALL_SPEED,
+      r: FIREBALL_R,
+    });
+    boss.nextFireballAt = now + FIREBALL_MIN_GAP + Math.random() * (FIREBALL_MAX_GAP - FIREBALL_MIN_GAP);
+  }
+
+  for (let i = fireballs.length - 1; i >= 0; i--) {
+    const f = fireballs[i];
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+
+    if (f.x < camera.x - 60 || f.x > camera.x + canvas.width + 60) {
+      fireballs.splice(i, 1);
+      continue;
+    }
+    if (circleRectOverlap(f, player)) {
+      fireballs.splice(i, 1);
+      if (now >= player.invulnUntil && now >= invincibleUntil) {
+        gameOver();
+        return;
+      }
+    }
+  }
+
+  if (rectsOverlap(player, boss)) {
+    if (player.hasSword) {
+      if (now >= boss.lastHitAt + HIT_COOLDOWN) {
+        boss.lastHitAt = now;
+        boss.hp--;
+        player.invulnUntil = now + HIT_COOLDOWN;
+        sfxHit();
+        triggerShake(6, 10);
+        spawnParticles(player.x + (boss.x > player.x ? player.w : 0), boss.y + boss.h * 0.5, 14, {
+          color: '#FF6A00', speed: 5, life: 25, size: 4, gravity: 0.1,
+        });
+        updateBossHUD();
+        if (boss.hp <= 0) {
+          boss.alive = false;
+          fireballs = [];
+          spawnParticles(boss.x + boss.w / 2, boss.y + boss.h / 2, 40, {
+            color: '#FF6A00', speed: 7, life: 45, size: 5, gravity: 0.05,
+          });
+          triggerShake(12, 25);
+          updateBossHUD();
+          winGame();
+        }
+      }
+    } else if (now >= invincibleUntil) {
+      gameOver();
+    }
   }
 }
 
@@ -712,6 +878,55 @@ function drawPlayer() {
   ctx.restore();
 }
 
+function drawSword() {
+  if (!sword) return;
+  const by = sword.y + Math.sin(Date.now() / 280) * 5;
+  if (imgOk('sword')) {
+    ctx.drawImage(ASSETS.sword, sword.x - sword.r, by - sword.r, sword.r * 2, sword.r * 2);
+  } else {
+    ctx.save();
+    ctx.translate(sword.x, by);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillStyle = '#D8D8D8';
+    ctx.fillRect(-3, -sword.r, 6, sword.r * 1.6);
+    ctx.fillStyle = '#8A5A2B';
+    ctx.fillRect(-6, sword.r * 0.5, 12, 6);
+    ctx.restore();
+  }
+}
+
+function drawBoss() {
+  if (!boss.alive) return;
+  const facingLeft = player.x < boss.x;
+  ctx.save();
+  if (imgOk('dragon')) {
+    ctx.translate(boss.x + boss.w / 2, boss.y + boss.h / 2);
+    if (!facingLeft) ctx.scale(-1, 1);
+    ctx.drawImage(ASSETS.dragon, -boss.w / 2, -boss.h / 2, boss.w, boss.h);
+  } else {
+    ctx.fillStyle = '#7A1FA2';
+    ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(boss.x + (facingLeft ? boss.w * 0.2 : boss.w * 0.8), boss.y + boss.h * 0.25, 10, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawFireballs() {
+  for (const f of fireballs) {
+    if (imgOk('flame')) {
+      ctx.drawImage(ASSETS.flame, f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+    } else {
+      ctx.fillStyle = '#FF6A00';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#FFD23F';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
 function drawWorld() {
   ctx.save();
   ctx.translate(-camera.x, 0);
@@ -726,7 +941,10 @@ function drawWorld() {
 
   drawSpikes();
   drawCoins();
-  drawPowerups(); 
+  drawPowerups();
+  drawSword();
+  drawBoss();
+  drawFireballs();
   drawFlagpole();
   drawPlayer();
 
